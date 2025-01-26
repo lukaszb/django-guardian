@@ -7,6 +7,5 @@ Development
 
     overview
     testing
-    supported-versions
     changes
 
