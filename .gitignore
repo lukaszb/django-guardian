@@ -15,9 +15,13 @@ dist
 .hgignore
 .tox
 .ropeproject
+.venv
+venv
 
 example_project/media
 example_project/conf/*.py
+example_project_custom_group/media
+example_project_custom_group/conf/*.py
 .idea/
 .eggs/
 .cache/
@@ -28,3 +32,9 @@ example_project/conf/*.py
 .DAV
 .project
 .pydevproject
+
+# Local virtual environments
+.venv
+
+# Documentation
+site*/

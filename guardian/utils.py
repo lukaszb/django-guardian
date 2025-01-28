@@ -1,9 +1,9 @@
 """
 django-guardian helper functions.
 
-Functions defined within this module should be considered as django-guardian's
-internal functionality. They are **not** guaranteed to be stable - which means
-they actual input parameters/output type may change in future releases.
+Functions defined within this module should be considered as django-guardian’s
+internal functionality.
+They are not guaranteed to be stable, and their APIs may change in any future releases.
 """
 import logging
 import os
@@ -11,7 +11,7 @@ from itertools import chain
 
 from django.conf import settings
 from django.contrib.auth import REDIRECT_FIELD_NAME, get_user_model
-from django.contrib.auth.models import AnonymousUser, Group
+from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.db.models import Model, QuerySet
 from django.http import HttpResponseForbidden, HttpResponseNotFound
@@ -25,9 +25,17 @@ abspath = lambda *p: os.path.abspath(os.path.join(*p))
 
 
 def get_anonymous_user():
-    """
-    Returns ``User`` instance (not ``AnonymousUser``) depending on
-    ``ANONYMOUS_USER_NAME`` configuration.
+    """Get the django-guardian equivalent of the annonymous user.
+
+    It returns a `User` model instance (not `AnonymousUser`) depending on
+    `ANONYMOUS_USER_NAME` configuration.
+
+    See Also:
+        See the configuration docs that explain that the Guardian anonymous user is
+        not equivalent to Django’s AnonymousUser.
+
+        - [Guardian Configuration](https://django-guardian.readthedocs.io/en/stable/configuration.html)
+        - [ANONYMOUS_USER_NAME configuration](https://django-guardian.readthedocs.io/en/stable/configuration.html#anonymous-user-nam)
     """
     User = get_user_model()
     lookup = {User.USERNAME_FIELD: guardian_settings.ANONYMOUS_USER_NAME}
@@ -35,38 +43,46 @@ def get_anonymous_user():
 
 
 def get_identity(identity):
-    """
-    Returns (user_obj, None) or (None, group_obj) tuple depending on what is
-    given. Also accepts AnonymousUser instance but would return ``User``
-    instead - it is convenient and needed for authorization backend to support
-    anonymous users.
+    """Get a tuple with the identity of the given input.
 
-    :param identity: either ``User`` or ``Group`` instance
+    Returns a tuple with one of the members set to `None` depending on whether the input is
+    a `Group` instance or a `User` instance.
+    Also accepts AnonymousUser instance but would return `User` instead.
+    It is convenient and needed for authorization backend to support anonymous users.
 
-    :raises ``NotUserNorGroup``: if cannot return proper identity instance
+    Returns:
+         identity (tuple): Either (user_obj, None) or (None, group_obj) depending on the input type.
 
-    **Examples**::
+    Parameters:
+        identity (User | Group): Instance of `User` or `Group` to get identity from.
 
-       >>> from django.contrib.auth.models import User
-       >>> user = User.objects.create(username='joe')
-       >>> get_identity(user)
-       (<User: joe>, None)
+    Raises:
+        NotUserNorGroup: If the function cannot return proper identity instance
 
-       >>> group = Group.objects.create(name='users')
-       >>> get_identity(group)
-       (None, <Group: users>)
+    Examples:
+        ```shell
+        >>> from django.contrib.auth.models import User
+        >>> user = User.objects.create(username='joe')
+        >>> get_identity(user)
+        (<User: joe>, None)
 
-       >>> anon = AnonymousUser()
-       >>> get_identity(anon)
-       (<User: AnonymousUser>, None)
+        >>> group = Group.objects.create(name='users')
+        >>> get_identity(group)
+        (None, <Group: users>)
 
-       >>> get_identity("not instance")
-       ...
-       NotUserNorGroup: User/AnonymousUser or Group instance is required (got )
+        >>> anon = AnonymousUser()
+        >>> get_identity(anon)
+        (<User: AnonymousUser>, None)
 
+        >>> get_identity("not instance")
+        ...
+        NotUserNorGroup: User/AnonymousUser or Group instance is required (got )
+        ```
     """
     if isinstance(identity, AnonymousUser):
         identity = get_anonymous_user()
+
+    Group = get_group_obj_perms_model().group.field.related_model
 
     # get identity from queryset model type
     if isinstance(identity, QuerySet):
@@ -93,13 +109,13 @@ def get_identity(identity):
 
 def get_40x_or_None(request, perms, obj=None, login_url=None,
                     redirect_field_name=None, return_403=False,
-                    return_404=False, accept_global_perms=False,
-                    any_perm=False):
+                    return_404=False, permission_denied_message='',
+                    accept_global_perms=False, any_perm=False):
     login_url = login_url or settings.LOGIN_URL
     redirect_field_name = redirect_field_name or REDIRECT_FIELD_NAME
 
     # Handles both original and with object provided permission check
-    # as ``obj`` defaults to None
+    # as `obj` defaults to None
 
     has_permissions = False
     # global perms check first (if accept_global_perms)
@@ -117,11 +133,12 @@ def get_40x_or_None(request, perms, obj=None, login_url=None,
     if not has_permissions:
         if return_403:
             if guardian_settings.RENDER_403:
-                response = render(request, guardian_settings.TEMPLATE_403)
+                response = render(request, guardian_settings.TEMPLATE_403,
+                                  context={'exception': permission_denied_message})
                 response.status_code = 403
                 return response
             elif guardian_settings.RAISE_403:
-                raise PermissionDenied
+                raise PermissionDenied(permission_denied_message)
             return HttpResponseForbidden()
         if return_404:
             if guardian_settings.RENDER_404:
@@ -157,11 +174,10 @@ def get_obj_perm_model_by_conf(setting_name):
 
 
 def clean_orphan_obj_perms():
-    """
-    Seeks and removes all object permissions entries pointing at non-existing
-    targets.
+    """Seeks and removes all object permissions entries pointing at non-existing targets.
 
-    Returns number of removed objects.
+    Returns:
+         deleted (int): The number of objects removed.
     """
     UserObjectPermission = get_user_obj_perms_model()
     GroupObjectPermission = get_group_obj_perms_model()
@@ -215,7 +231,7 @@ def get_obj_perms_model(obj, base_cls, generic_cls):
 
 def get_user_obj_perms_model(obj = None):
     """
-    Returns model class that connects given ``obj`` and User class.
+    Returns model class that connects given `obj` and User class.
     If obj is not specified, then user generic object permission model
     returned is determined by the guardian setting 'USER_OBJ_PERMS_MODEL'
     """
@@ -226,7 +242,7 @@ def get_user_obj_perms_model(obj = None):
 
 def get_group_obj_perms_model(obj = None):
     """
-    Returns model class that connects given ``obj`` and Group class.
+    Returns model class that connects given `obj` and Group class.
     If obj is not specified, then group generic object permission model
     returned is determined byt the guardian setting 'GROUP_OBJ_PERMS_MODEL'.
     """

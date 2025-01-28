@@ -1,9 +1,8 @@
-import os
 from setuptools import setup
-from extras import RunFlakesCommand
 
+import os
 
-version = '2.4.0'
+version = '3.0.0rc1'
 
 readme_file = os.path.join(os.path.dirname(__file__), 'README.rst')
 with open(readme_file) as f:
@@ -12,8 +11,8 @@ with open(readme_file) as f:
 setup(
     name='django-guardian',
     version=version,
-    python_requires='>=3.5',
-    url='http://github.com/django-guardian/django-guardian',
+    python_requires='>=3.8',
+    url='https://github.com/django-guardian/django-guardian',
     author='Lukasz Balcerzak',
     author_email='lukaszbalcerzak@gmail.com',
     download_url='https://github.com/django-guardian/django-guardian/tags',
@@ -28,15 +27,16 @@ setup(
     ],
     include_package_data=True,
     license='BSD',
-    install_requires=["Django>=2.2"],
+    install_requires=["Django>=3.2"],
     tests_require=['mock', 'django-environ', 'pytest', 'pytest-django'],
     classifiers=['Development Status :: 5 - Production/Stable',
                  'Environment :: Web Environment',
                  'Framework :: Django',
-                 'Framework :: Django :: 2.2',
-                 'Framework :: Django :: 3.0',
-                 'Framework :: Django :: 3.1',
                  'Framework :: Django :: 3.2',
+                 'Framework :: Django :: 4.1',
+                 'Framework :: Django :: 4.2',
+                 'Framework :: Django :: 5.0',
+                 'Framework :: Django :: 5.1',
                  'Intended Audience :: Developers',
                  'License :: OSI Approved :: BSD License',
                  'Operating System :: OS Independent',
@@ -44,12 +44,12 @@ setup(
                  'Topic :: Security',
                  'Programming Language :: Python :: 3',
                  'Programming Language :: Python :: 3 :: Only',
-                 'Programming Language :: Python :: 3.5',
-                 'Programming Language :: Python :: 3.6',
-                 'Programming Language :: Python :: 3.7',
                  'Programming Language :: Python :: 3.8',
                  'Programming Language :: Python :: 3.9',
+                 'Programming Language :: Python :: 3.10',
+                 'Programming Language :: Python :: 3.11',
+                 'Programming Language :: Python :: 3.12',
+                 'Programming Language :: Python :: 3.13',
                  ],
-    test_suite='tests.main',
-    cmdclass={'flakes': RunFlakesCommand},
+    test_suite='tests.main'
 )

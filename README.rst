@@ -22,10 +22,10 @@ Online documentation is available at https://django-guardian.readthedocs.io/.
 Requirements
 ------------
 
-* Python 3.5+
-* A supported version of Django (currently 2.2+)
+* Python 3.8+
+* A supported version of Django (currently 3.2+)
 
-GitHub Actions run tests against Django versions 2.2, 3.0, 3.1, 3.2, and main.
+GitHub Actions run tests against Django versions 3.2, 4.1, 4.2, 5.0, 5.1, and main.
 
 Installation
 ------------
@@ -76,8 +76,8 @@ Lets start really quickly:
       >>> admins = Group.objects.create(name='admins')
       >>> jack.has_perm('change_group', admins)
       False
-      >>> from guardian.models import UserObjectPermission
-      >>> UserObjectPermission.objects.assign_perm('change_group', jack, obj=admins)
+      >>> from guardian.shortcuts import assign_perm
+      >>> assign_perm('change_group', jack, obj=admins)
       <UserObjectPermission: admins | jack | change_group>
       >>> jack.has_perm('change_group', admins)
       True

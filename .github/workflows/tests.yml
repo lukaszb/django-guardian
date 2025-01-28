@@ -10,28 +10,55 @@ on:
 
 jobs:
   tests:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.6, 3.7, 3.8, 3.9]
-        django: [2.2.17, 3.0.11, 3.1.3, 3.2rc1]
-        include:
-          - python-version: 3.8
-            django: main
-          - python-version: 3.9
-            django: main
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
+        django: ["3.2.25", "4.1.13", "4.2.16", "5.0.9", "5.1.5", "main"]
+        exclude:
+          - python-version: "3.13"
+            django: "5.0.9"
+          - python-version: "3.13"
+            django: "4.2.16"
+          - python-version: "3.13"
+            django: "4.1.13"
+          - python-version: "3.13"
+            django: "3.2.25"
+          - python-version: "3.12"
+            django: "4.1.13"
+          - python-version: "3.12"
+            django: "3.2.25"
+          - python-version: "3.11"
+            django: "3.2.25"
+          - python-version: "3.11"
+            django: "main"
+          - python-version: "3.10"
+            django: "main"
+          - python-version: "3.9"
+            django: "5.1.5"
+          - python-version: "3.9"
+            django: "5.0.9"
+          - python-version: "3.9"
+            django: "main"
+          - python-version: "3.8"
+            django: "5.1.5"
+          - python-version: "3.8"
+            django: "5.0.9"
+          - python-version: "3.8"
+            django: "main"
 
     services:
       mariadb:
-        image: mariadb:10.1
+        image: mariadb:11.4.2
         env:
           MYSQL_ROOT_PASSWORD: mariadb
         ports:
           - 3306:3306
       postgres:
-        image: postgres:10-alpine
+        image: postgres:16-alpine
         env:
+          PGUSER: postgres
           POSTGRES_PASSWORD: postgres
         options: >-
           --health-cmd pg_isready
@@ -42,9 +69,9 @@ jobs:
           - 5432:5432
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install latest pip, setuptools, and wheel
@@ -93,6 +120,28 @@ jobs:
         run: |
           pip install .;
           cd example_project;
+          DJANGO_VERSION="${{ matrix.django }}"
+          EXAMPLE_PROJECTS_DJANGO_VERSION=$(grep -i "django[^-]" requirements.txt | cut -d "=" -f 2)
+          if [ "${DJANGO_VERSION:0:3}" = "${EXAMPLE_PROJECTS_DJANGO_VERSION:0:3}" ]; then
+              python -Wa manage.py makemigrations --check --dry-run;
+          elif [ -z "${EXAMPLE_PROJECTS_DJANGO_VERSION}" ]; then
+              echo "Could not determine which version of Django the example project supports."
+              exit 1
+          fi;
+
+          export DATABASE_URL=postgres://postgres:postgres@localhost/django_guardian
+          python -Wa manage.py test;
+
+          export DATABASE_URL=mysql://root:mariadb@127.0.0.1:3306/django_guardian
+          python -Wa manage.py test;
+
+          export DATABASE_URL=sqlite://
+          python -Wa manage.py test;
+
+      - name: Test example_project_custom_group
+        run: |
+          pip install .;
+          cd example_project_custom_group;
           DJANGO_VERSION="${{ matrix.django }}"
           EXAMPLE_PROJECTS_DJANGO_VERSION=$(grep -i "django[^-]" requirements.txt | cut -d "=" -f 2)
           if [ "${DJANGO_VERSION:0:3}" = "${EXAMPLE_PROJECTS_DJANGO_VERSION:0:3}" ]; then
